@@ -93,9 +93,9 @@ class Layout(Widget):
         """
         found = None
         for side in ['top', 'right', 'bottom', 'left']:
-            if not hasattr(self, "border_" + side):
+            if not hasattr(self, f"border_{side}"):
                 return
-            old, found = found, getattr(self, "border_" + side)
+            old, found = found, getattr(self, f"border_{side}")
             if found is None or (old is not None and found != old):
                 return
         return found
@@ -105,7 +105,7 @@ class Layout(Widget):
         `border` property setter. Set all 4 sides to `border` string.
         """
         for side in ['top', 'right', 'bottom', 'left']:
-            setattr(self, "border_" + side, border)
+            setattr(self, f"border_{side}", border)
 
     border = property(_get_border, _set_border)
 

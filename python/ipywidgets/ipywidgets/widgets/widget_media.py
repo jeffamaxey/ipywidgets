@@ -90,9 +90,8 @@ class _Media(DOMWidget, ValueWidget, CoreWidget):
     def _load_file_value(cls, filename):
         if getattr(filename, 'read', None) is not None:
             return filename.read()
-        else:
-            with open(filename, 'rb') as f:
-                return f.read()
+        with open(filename, 'rb') as f:
+            return f.read()
 
     @classmethod
     def _guess_format(cls, tag, filename):
@@ -102,10 +101,7 @@ class _Media(DOMWidget, ValueWidget, CoreWidget):
 
         try:
             mtype, _ = mimetypes.guess_type(name)
-            if not mtype.startswith('{}/'.format(tag)):
-                return None
-
-            return mtype[len('{}/'.format(tag)):]
+            return mtype[len(f'{tag}/'):] if mtype.startswith(f'{tag}/') else None
         except Exception:
             return None
 
@@ -114,21 +110,17 @@ class _Media(DOMWidget, ValueWidget, CoreWidget):
         # typically be very, very large.
         class_name = self.__class__.__name__
 
-        # Return value first like a ValueWidget
-        signature = []
-
         sig_value = 'value={!r}'.format(self.value[:40].tobytes())
         if self.value.nbytes > 40:
-            sig_value = sig_value[:-1]+"..."+sig_value[-1]
-        signature.append(sig_value)
-
+            sig_value = f"{sig_value[:-1]}...{sig_value[-1]}"
+        signature = [sig_value]
         for key in super(cls, self)._repr_keys():
             if key == 'value':
                 continue
             value = str(getattr(self, key))
             signature.append('{}={!r}'.format(key, value))
         signature = ', '.join(signature)
-        return '{}({})'.format(class_name, signature)
+        return f'{class_name}({signature})'
 
 
 @register

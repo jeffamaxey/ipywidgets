@@ -100,8 +100,7 @@ class LayoutProperties(HasTraits):
         _props = LayoutProperties.class_trait_names()
 
         for prop in _props:
-            value = getattr(self, prop)
-            if value:
+            if value := getattr(self, prop):
                 value = self._property_rewrite[prop].get(value, value)
                 setattr(self.layout, prop, value) #pylint: disable=no-member
 
@@ -162,11 +161,11 @@ class AppLayout(GridBox, LayoutProperties):
         if re.match(r'\d+\.?\d*(px|fr|%)$', size):
             return size
         if re.match(r'\d+\.?\d*$', size):
-            return size + 'fr'
+            return f'{size}fr'
 
-        raise TypeError("the pane sizes must be in one of the following formats: "
-                        "'10px', '10fr', 10 (will be converted to '10fr')."
-                        "Got '{}'".format(size))
+        raise TypeError(
+            f"the pane sizes must be in one of the following formats: '10px', '10fr', 10 (will be converted to '10fr').Got '{size}'"
+        )
 
     def _convert_sizes(self, size_list):
         return list(map(self._size_to_css, size_list))
@@ -197,7 +196,6 @@ class AppLayout(GridBox, LayoutProperties):
             child.layout.grid_area = position
 
         if self.merge:
-
             if len(children) == 1:
                 position = list(children.keys())[0]
                 grid_template_areas = [[position, position, position],
@@ -232,8 +230,9 @@ class AppLayout(GridBox, LayoutProperties):
                     del grid_template_rows[-1]
 
 
-        grid_template_areas_css = "\n".join('"{}"'.format(" ".join(line))
-                                            for line in grid_template_areas)
+        grid_template_areas_css = "\n".join(
+            f'"{" ".join(line)}"' for line in grid_template_areas
+        )
 
         self.layout.grid_template_columns = " ".join(grid_template_columns)
         self.layout.grid_template_rows = " ".join(grid_template_rows)
@@ -281,7 +280,9 @@ class GridspecLayout(GridBox, LayoutProperties):
         super().__init__(**kwargs)
         self.n_rows = n_rows
         self.n_columns = n_columns
-        self._grid_template_areas = [['.'] * self.n_columns for i in range(self.n_rows)]
+        self._grid_template_areas = [
+            ['.'] * self.n_columns for _ in range(self.n_rows)
+        ]
 
         self._grid_template_rows = 'repeat(%d, 1fr)' % (self.n_rows,)
         self._grid_template_columns = 'repeat(%d, 1fr)' % (self.n_columns,)
@@ -346,8 +347,9 @@ class GridspecLayout(GridBox, LayoutProperties):
 
     def _update_layout(self):
 
-        grid_template_areas_css = "\n".join('"{}"'.format(" ".join(line))
-                                            for line in self._grid_template_areas)
+        grid_template_areas_css = "\n".join(
+            f'"{" ".join(line)}"' for line in self._grid_template_areas
+        )
 
         self.layout.grid_template_columns = self._grid_template_columns
         self.layout.grid_template_rows = self._grid_template_rows
@@ -419,7 +421,6 @@ class TwoByTwoLayout(GridBox, LayoutProperties):
             child.layout.grid_area = position
 
         if self.merge:
-
             if len(children) == 1:
                 position = list(children.keys())[0]
                 grid_template_areas = [[position, position],
@@ -427,7 +428,7 @@ class TwoByTwoLayout(GridBox, LayoutProperties):
             else:
                 columns = ['left', 'right']
                 for i, column in enumerate(columns):
-                    top, bottom = children.get('top-' + column), children.get('bottom-' + column)
+                    top, bottom = children.get(f'top-{column}'), children.get(f'bottom-{column}')
                     i_neighbour = (i + 1) % 2
                     if top is None and bottom is None:
                         # merge each cell in this column with the neighbour on the same row
@@ -440,8 +441,9 @@ class TwoByTwoLayout(GridBox, LayoutProperties):
                         # merge with the cell above
                         grid_template_areas[1][i] = grid_template_areas[0][i]
 
-        grid_template_areas_css = "\n".join('"{}"'.format(" ".join(line))
-                                            for line in grid_template_areas)
+        grid_template_areas_css = "\n".join(
+            f'"{" ".join(line)}"' for line in grid_template_areas
+        )
 
         self.layout.grid_template_columns = '1fr 1fr'
         self.layout.grid_template_rows = '1fr 1fr'

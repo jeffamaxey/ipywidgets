@@ -41,7 +41,7 @@ def _widget_to_json(x, obj):
     elif isinstance(x, (list, tuple)):
         return [_widget_to_json(v, obj) for v in x]
     elif isinstance(x, Widget):
-        return "IPY_MODEL_" + x.model_id
+        return f"IPY_MODEL_{x.model_id}"
     else:
         return x
 
@@ -146,15 +146,10 @@ def _buffer_list_equal(a, b):
         return False
     if a == b:
         return True
-    for ia, ib in zip(a, b):
-        # Check byte equality, since bytes are what is actually synced
-        # NOTE: Simple ia != ib does not always work as intended, as
-        # e.g. memoryview(np.frombuffer(ia, dtype='float32')) !=
-        # memoryview(np.frombuffer(b)), since the format info differs.
-        # Compare without copying.
-        if memoryview(ia).cast('B') != memoryview(ib).cast('B'):
-            return False
-    return True
+    return all(
+        memoryview(ia).cast('B') == memoryview(ib).cast('B')
+        for ia, ib in zip(a, b)
+    )
 
 
 class LoggingHasTraits(HasTraits):
@@ -247,8 +242,7 @@ class WidgetRegistry:
         #view_names = next(v for k, v in view_versions.items()
         #                  if semver.match(view_module_version, k))
         view_names = list(view_versions.values())[0]
-        widget_class = view_names[view_name]
-        return widget_class
+        return view_names[view_name]
 
     def items(self):
         for model_module, mm in sorted(self._registry.items()):
@@ -326,28 +320,29 @@ class Widget(LoggingHasTraits):
         data = msg['content']['data']
         method = data['method']
 
-        if method == 'request_states':
-            # Send back the full widgets state
-            cls.get_manager_state()
-            widgets = cls._active_widgets.values()
-            full_state = {}
-            drop_defaults = False
-            for widget in widgets:
-                full_state[widget.model_id] = {
-                    'model_name': widget._model_name,
-                    'model_module': widget._model_module,
-                    'model_module_version': widget._model_module_version,
-                    'state': widget.get_state(drop_defaults=drop_defaults),
-                }
-            full_state, buffer_paths, buffers = _remove_buffers(full_state)
-            cls._control_comm.send(dict(
-                method='update_states',
-                states=full_state,
-                buffer_paths=buffer_paths
-            ), buffers=buffers)
-
-        else:
-            raise RuntimeError('Unknown front-end to back-end widget control msg with method "%s"' % method)
+        if method != 'request_states':
+            raise RuntimeError(
+                f'Unknown front-end to back-end widget control msg with method "{method}"'
+            )
+        # Send back the full widgets state
+        cls.get_manager_state()
+        widgets = cls._active_widgets.values()
+        drop_defaults = False
+        full_state = {
+            widget.model_id: {
+                'model_name': widget._model_name,
+                'model_module': widget._model_module,
+                'model_module_version': widget._model_module_version,
+                'state': widget.get_state(drop_defaults=drop_defaults),
+            }
+            for widget in widgets
+        }
+        full_state, buffer_paths, buffers = _remove_buffers(full_state)
+        cls._control_comm.send(dict(
+            method='update_states',
+            states=full_state,
+            buffer_paths=buffer_paths
+        ), buffers=buffers)
 
     @staticmethod
     def handle_comm_opened(comm, msg):
@@ -378,11 +373,12 @@ class Widget(LoggingHasTraits):
         :param widgets: list with widgets to include in the state (or all widgets when None)
         :return:
         """
-        state = {}
         if widgets is None:
             widgets = Widget._active_widgets.values()
-        for widget in widgets:
-            state[widget.model_id] = widget._get_embed_state(drop_defaults=drop_defaults)
+        state = {
+            widget.model_id: widget._get_embed_state(drop_defaults=drop_defaults)
+            for widget in widgets
+        }
         return {'version_major': 2, 'version_minor': 0, 'state': state}
 
     def _get_embed_state(self, drop_defaults=False):
@@ -427,7 +423,7 @@ class Widget(LoggingHasTraits):
 
     @default('keys')
     def _default_keys(self):
-        return [name for name in self.traits(sync=True)]
+        return list(self.traits(sync=True))
 
     _property_lock = Dict()
     _holding_sync = False
@@ -565,11 +561,11 @@ class Widget(LoggingHasTraits):
         """Called when a state is received from the front-end."""
         # Send an echo update message immediately
         if JUPYTER_WIDGETS_ECHO:
-            echo_state = {}
-            for attr,value in sync_data.items():
-                if self.trait_metadata(attr, 'echo_update', default=True):
-                    echo_state[attr] = value
-            if echo_state:
+            if echo_state := {
+                attr: value
+                for attr, value in sync_data.items()
+                if self.trait_metadata(attr, 'echo_update', default=True)
+            }:
                 echo_state, echo_buffer_paths, echo_buffers = _remove_buffers(echo_state)
                 msg = {
                     'method': 'echo_update',
@@ -627,11 +623,14 @@ class Widget(LoggingHasTraits):
         # Send the state to the frontend before the user-registered callbacks
         # are called.
         name = change['name']
-        if self.comm is not None and self.comm.kernel is not None:
-            # Make sure this isn't information that the front-end just sent us.
-            if name in self.keys and self._should_send_property(name, getattr(self, name)):
-                # Send new state to front-end
-                self.send_state(key=name)
+        if (
+            self.comm is not None
+            and self.comm.kernel is not None
+            and name in self.keys
+            and self._should_send_property(name, getattr(self, name))
+        ):
+            # Send new state to front-end
+            self.send_state(key=name)
         super().notify_change(change)
 
     def __repr__(self):
@@ -699,25 +698,24 @@ class Widget(LoggingHasTraits):
         data = msg['content']['data']
         method = data['method']
 
-        if method == 'update':
+        if method == 'custom':
+            if 'content' in data:
+                self._handle_custom_msg(data['content'], msg['buffers'])
+
+        elif method == 'request_state':
+            self.send_state()
+
+        elif method == 'update':
             if 'state' in data:
                 state = data['state']
                 if 'buffer_paths' in data:
                     _put_buffers(state, data['buffer_paths'], msg['buffers'])
                 self.set_state(state)
 
-        # Handle a state request.
-        elif method == 'request_state':
-            self.send_state()
-
-        # Handle a custom msg from the front-end.
-        elif method == 'custom':
-            if 'content' in data:
-                self._handle_custom_msg(data['content'], msg['buffers'])
-
-        # Catch remainder.
         else:
-            self.log.error('Unknown front-end to back-end widget msg with method "%s"' % method)
+            self.log.error(
+                f'Unknown front-end to back-end widget msg with method "{method}"'
+            )
 
     def _handle_custom_msg(self, content, buffers):
         """Called when a custom msg is received."""
@@ -736,22 +734,16 @@ class Widget(LoggingHasTraits):
     def _repr_mimebundle_(self, **kwargs):
         plaintext = repr(self)
         if len(plaintext) > 110:
-            plaintext = plaintext[:110] + '…'
-        data = {
-            'text/plain': plaintext,
-        }
+            plaintext = f'{plaintext[:110]}…'
         if self._view_name is not None:
-            # The 'application/vnd.jupyter.widget-view+json' mimetype has not been registered yet.
-            # See the registration process and naming convention at
-            # http://tools.ietf.org/html/rfc6838
-            # and the currently registered mimetypes at
-            # http://www.iana.org/assignments/media-types/media-types.xhtml.
-            data['application/vnd.jupyter.widget-view+json'] = {
-                'version_major': 2,
-                'version_minor': 0,
-                'model_id': self._model_id
+            return {
+                'text/plain': plaintext,
+                'application/vnd.jupyter.widget-view+json': {
+                    'version_major': 2,
+                    'version_minor': 0,
+                    'model_id': self._model_id,
+                },
             }
-            return data
 
     def _send(self, msg, buffers=None):
         """Sends a message to the model in the front-end."""
@@ -782,4 +774,4 @@ class Widget(LoggingHasTraits):
             '{}={!r}'.format(key, getattr(self, key))
             for key in keys
         )
-        return '{}({})'.format(class_name, signature)
+        return f'{class_name}({signature})'

@@ -10,6 +10,7 @@
 Functions for generating embeddable HTML/javascript of a widget.
 """
 
+
 import json
 import re
 from .widgets import Widget, DOMWidget
@@ -58,16 +59,16 @@ widget_view_template = """<script type="application/vnd.jupyter.widget-view+json
 {view_spec}
 </script>"""
 
-DEFAULT_EMBED_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@%s/dist/embed.js'%__html_manager_version__
-DEFAULT_EMBED_REQUIREJS_URL = 'https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@%s/dist/embed-amd.js'%__html_manager_version__
+DEFAULT_EMBED_SCRIPT_URL = f'https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@{__html_manager_version__}/dist/embed.js'
+DEFAULT_EMBED_REQUIREJS_URL = f'https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@{__html_manager_version__}/dist/embed-amd.js'
 
-_doc_snippets = {}
-_doc_snippets['views_attribute'] = """
+_doc_snippets = {
+    'views_attribute': """
     views: widget or collection of widgets or None
         The widgets to include views for. If None, all DOMWidgets are
         included (not just the displayed ones).
-"""
-_doc_snippets['embed_kwargs'] = """
+""",
+    'embed_kwargs': """
     drop_defaults: boolean
         Whether to drop default values from the widget states.
     state: dict or None (default)
@@ -89,7 +90,8 @@ _doc_snippets['embed_kwargs'] = """
         If True avoids sending user credentials while requesting the scripts.
         When opening an HTML file from disk, some browsers may refuse to load
         the scripts.
-"""
+""",
+}
 
 
 def _find_widget_refs_by_state(widget, state):
@@ -116,7 +118,7 @@ def _find_widget_refs_by_state(widget, state):
 def _get_recursive_state(widget, store=None, drop_defaults=False):
     """Gets the embed state of a widget, and all other widgets it refers to as well"""
     if store is None:
-        store = dict()
+        store = {}
     state = widget._get_embed_state(drop_defaults=drop_defaults)
     store[widget.model_id] = state
 
@@ -130,9 +132,13 @@ def _get_recursive_state(widget, store=None, drop_defaults=False):
 def add_resolved_links(store, drop_defaults):
     """Adds the state of any link models between two models in store"""
     for widget_id, widget in Widget._active_widgets.items(): # go over all widgets
-        if isinstance(widget, Link) and widget_id not in store:
-            if widget.source[0].model_id in store and widget.target[0].model_id in store:
-                store[widget.model_id] = widget._get_embed_state(drop_defaults=drop_defaults)
+        if (
+            isinstance(widget, Link)
+            and widget_id not in store
+            and widget.source[0].model_id in store
+            and widget.target[0].model_id in store
+        ):
+            store[widget.model_id] = widget._get_embed_state(drop_defaults=drop_defaults)
 
 
 def dependency_state(widgets, drop_defaults=True):

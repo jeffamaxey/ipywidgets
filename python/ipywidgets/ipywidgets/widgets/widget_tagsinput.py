@@ -34,7 +34,9 @@ class TagsInputBase(DescriptionWidget, ValueWidget, CoreWidget):
 
         for tag_value in proposal['value']:
             if tag_value not in self.allowed_tags:
-                raise TraitError('Tag value {} is not allowed, allowed tags are {}'.format(tag_value, self.allowed_tags))
+                raise TraitError(
+                    f'Tag value {tag_value} is not allowed, allowed tags are {self.allowed_tags}'
+                )
 
         return proposal['value']
 
@@ -73,9 +75,9 @@ class NumbersInputBase(TagsInput):
     def _validate_numbers(self, proposal):
         for tag_value in proposal['value']:
             if self.min is not None and tag_value < self.min:
-                raise TraitError('Tag value {} should be >= {}'.format(tag_value, self.min))
+                raise TraitError(f'Tag value {tag_value} should be >= {self.min}')
             if self.max is not None and tag_value > self.max:
-                raise TraitError('Tag value {} should be <= {}'.format(tag_value, self.max))
+                raise TraitError(f'Tag value {tag_value} should be <= {self.max}')
 
         return proposal['value']
 

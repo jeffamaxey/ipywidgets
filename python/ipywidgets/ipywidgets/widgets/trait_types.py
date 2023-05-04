@@ -5,6 +5,7 @@
 Trait types for html widgets.
 """
 
+
 import re
 import traitlets
 import datetime as dt
@@ -28,9 +29,11 @@ _color_hsl = r'hsl\({fp},{fp},{fp}\)'
 _color_hsla = r'hsla\({fp},{fp},{fp},{fp}\)'
 
 # Regex colors rgb/rgba/hsl/hsla
-_color_rgbhsl_re = re.compile('({})|({})|({})|({})'.format(
-    _color_rgb, _color_rgba, _color_hsl, _color_hsla
-).format(ip=_color_int_percent, fp=_color_frac_percent))
+_color_rgbhsl_re = re.compile(
+    f'({_color_rgb})|({_color_rgba})|({_color_hsl})|({_color_hsla})'.format(
+        ip=_color_int_percent, fp=_color_frac_percent
+    )
+)
 
 
 class Color(traitlets.Unicode):
@@ -42,10 +45,13 @@ class Color(traitlets.Unicode):
     def validate(self, obj, value):
         if value is None and self.allow_none:
             return value
-        if isinstance(value, str):
-            if (value.lower() in _color_names or _color_hex_re.match(value) or
-                _color_hexa_re.match(value) or _color_rgbhsl_re.match(value)):
-                return value
+        if isinstance(value, str) and (
+            value.lower() in _color_names
+            or _color_hex_re.match(value)
+            or _color_hexa_re.match(value)
+            or _color_rgbhsl_re.match(value)
+        ):
+            return value
 
         self.error(obj, value)
 
@@ -88,52 +94,50 @@ def datetime_to_json(pydt, manager):
     """
     if pydt is None:
         return None
-    else:
-        try:
-            utcdt = pydt.astimezone(dt.timezone.utc)
-        except (ValueError, OSError):
-            # If year is outside valid range for conversion,
-            # use it as-is
-            utcdt = pydt
-        return dict(
-            year=utcdt.year,
-            month=utcdt.month - 1,  # Months are 0-based indices in JS
-            date=utcdt.day,
-            hours=utcdt.hour,  # Hours, Minutes, Seconds and Milliseconds
-            minutes=utcdt.minute,  # are plural in JS
-            seconds=utcdt.second,
-            milliseconds=utcdt.microsecond / 1000,
-        )
+    try:
+        utcdt = pydt.astimezone(dt.timezone.utc)
+    except (ValueError, OSError):
+        # If year is outside valid range for conversion,
+        # use it as-is
+        utcdt = pydt
+    return dict(
+        year=utcdt.year,
+        month=utcdt.month - 1,  # Months are 0-based indices in JS
+        date=utcdt.day,
+        hours=utcdt.hour,  # Hours, Minutes, Seconds and Milliseconds
+        minutes=utcdt.minute,  # are plural in JS
+        seconds=utcdt.second,
+        milliseconds=utcdt.microsecond / 1000,
+    )
 
 
 def datetime_from_json(js, manager):
     """Deserialize a Python datetime object from json."""
     if js is None:
         return None
-    else:
-        try:
-            return dt.datetime(
-                js["year"],
-                js["month"] + 1,  # Months are 1-based in Python
-                js["date"],
-                js["hours"],
-                js["minutes"],
-                js["seconds"],
-                js["milliseconds"] * 1000,
-            ).astimezone()
-        except (ValueError, OSError):
-            # If year is outside valid range for conversion,
-            # return UTC datetime
-            return dt.datetime(
-                js["year"],
-                js["month"] + 1,  # Months are 1-based in Python
-                js["date"],
-                js["hours"],
-                js["minutes"],
-                js["seconds"],
-                js["milliseconds"] * 1000,
-                dt.timezone.utc,
-            )
+    try:
+        return dt.datetime(
+            js["year"],
+            js["month"] + 1,  # Months are 1-based in Python
+            js["date"],
+            js["hours"],
+            js["minutes"],
+            js["seconds"],
+            js["milliseconds"] * 1000,
+        ).astimezone()
+    except (ValueError, OSError):
+        # If year is outside valid range for conversion,
+        # return UTC datetime
+        return dt.datetime(
+            js["year"],
+            js["month"] + 1,  # Months are 1-based in Python
+            js["date"],
+            js["hours"],
+            js["minutes"],
+            js["seconds"],
+            js["milliseconds"] * 1000,
+            dt.timezone.utc,
+        )
 
 datetime_serialization = {
     'from_json': datetime_from_json,
@@ -158,17 +162,16 @@ def naive_to_json(pydt, manager):
     """
     if pydt is None:
         return None
-    else:
-        naivedt = pydt.replace(tzinfo=None)
-        return dict(
-            year=naivedt.year,
-            month=naivedt.month - 1,  # Months are 0-based indices in JS
-            date=naivedt.day,
-            hours=naivedt.hour,  # Hours, Minutes, Seconds and Milliseconds
-            minutes=naivedt.minute,  # are plural in JS
-            seconds=naivedt.second,
-            milliseconds=naivedt.microsecond / 1000,
-        )
+    naivedt = pydt.replace(tzinfo=None)
+    return dict(
+        year=naivedt.year,
+        month=naivedt.month - 1,  # Months are 0-based indices in JS
+        date=naivedt.day,
+        hours=naivedt.hour,  # Hours, Minutes, Seconds and Milliseconds
+        minutes=naivedt.minute,  # are plural in JS
+        seconds=naivedt.second,
+        milliseconds=naivedt.microsecond / 1000,
+    )
 
 
 def naive_from_json(js, manager):
@@ -207,14 +210,15 @@ def date_to_json(pydate, manager):
 
 def date_from_json(js, manager):
     """Deserialize a Javascript date."""
-    if js is None:
-        return None
-    else:
-        return dt.date(
+    return (
+        None
+        if js is None
+        else dt.date(
             js['year'],
             js['month'] + 1,  # Months are 1-based in Python
             js['date'],
         )
+    )
 
 date_serialization = {
     'from_json': date_from_json,
@@ -293,53 +297,51 @@ def datetime_to_json(pydt, manager):
     """
     if pydt is None:
         return None
-    else:
-        try:
-            utcdt = pydt.astimezone(dt.timezone.utc)
-        except (ValueError, OSError):
-            # If year is outside valid range for conversion,
-            # use it as-is
-            utcdt = pydt
-        return dict(
-            year=utcdt.year,
-            month=utcdt.month - 1,  # Months are 0-based indices in JS
-            date=utcdt.day,
-            hours=utcdt.hour,  # Hours, Minutes, Seconds and Milliseconds
-            minutes=utcdt.minute,  # are plural in JS
-            seconds=utcdt.second,
-            milliseconds=utcdt.microsecond / 1000,
-        )
+    try:
+        utcdt = pydt.astimezone(dt.timezone.utc)
+    except (ValueError, OSError):
+        # If year is outside valid range for conversion,
+        # use it as-is
+        utcdt = pydt
+    return dict(
+        year=utcdt.year,
+        month=utcdt.month - 1,  # Months are 0-based indices in JS
+        date=utcdt.day,
+        hours=utcdt.hour,  # Hours, Minutes, Seconds and Milliseconds
+        minutes=utcdt.minute,  # are plural in JS
+        seconds=utcdt.second,
+        milliseconds=utcdt.microsecond / 1000,
+    )
 
 
 def datetime_from_json(js, manager):
     """Deserialize a Python datetime object from json."""
     if js is None:
         return None
-    else:
-        try:
-            return dt.datetime(
-                js["year"],
-                js["month"] + 1,  # Months are 1-based in Python
-                js["date"],
-                js["hours"],
-                js["minutes"],
-                js["seconds"],
-                js["milliseconds"] * 1000,
-                dt.timezone.utc,
-            ).astimezone()
-        except (ValueError, OSError):
-            # If year is outside valid range for conversion,
-            # return naive datetime
-            return dt.datetime(
-                js["year"],
-                js["month"] + 1,  # Months are 1-based in Python
-                js["date"],
-                js["hours"],
-                js["minutes"],
-                js["seconds"],
-                js["milliseconds"] * 1000,
-                dt.timezone.utc,
-            )
+    try:
+        return dt.datetime(
+            js["year"],
+            js["month"] + 1,  # Months are 1-based in Python
+            js["date"],
+            js["hours"],
+            js["minutes"],
+            js["seconds"],
+            js["milliseconds"] * 1000,
+            dt.timezone.utc,
+        ).astimezone()
+    except (ValueError, OSError):
+        # If year is outside valid range for conversion,
+        # return naive datetime
+        return dt.datetime(
+            js["year"],
+            js["month"] + 1,  # Months are 1-based in Python
+            js["date"],
+            js["hours"],
+            js["minutes"],
+            js["seconds"],
+            js["milliseconds"] * 1000,
+            dt.timezone.utc,
+        )
 
 
 datetime_serialization = {"from_json": datetime_from_json, "to_json": datetime_to_json}
@@ -395,16 +397,11 @@ class NumberFormat(traitlets.Unicode):
             self.error(obj, value)
         else:
             format_type = re_match.group(9)
-            if format_type is None:
-                return value
-            elif format_type in _number_format_types:
+            if format_type is None or format_type in _number_format_types:
                 return value
             else:
                 raise traitlets.TraitError(
-                    'The type specifier of a NumberFormat trait must '
-                    'be one of {}, but a value of \'{}\' was '
-                    'specified.'.format(
-                        list(_number_format_types), format_type)
+                    f"The type specifier of a NumberFormat trait must be one of {list(_number_format_types)}, but a value of \'{format_type}\' was specified."
                 )
 
 class TypedTuple(traitlets.Container):

@@ -47,7 +47,7 @@ def test_widget_view():
 
 def test_close_all():
     # create a couple of widgets
-    widgets = [Button() for i in range(10)]
+    widgets = [Button() for _ in range(10)]
 
     assert len(Widget._active_widgets) > 0, "expect active widgets"
 

@@ -20,7 +20,7 @@ def test_time_creation_blank():
 
 
 def test_time_creation_value():
-    t = datetime.datetime.today()
+    t = datetime.datetime.now()
     w = NaiveDatetimePicker(value=t)
     assert w.value is t
 

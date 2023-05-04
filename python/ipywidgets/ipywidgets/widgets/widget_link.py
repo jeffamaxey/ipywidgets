@@ -30,13 +30,13 @@ class WidgetTraitTuple(Tuple):
         value = super().validate_elements(obj, value)
         widget, trait_name = value
         trait = widget.traits().get(trait_name)
-        trait_repr = "{}.{}".format(widget.__class__.__name__, trait_name)
+        trait_repr = f"{widget.__class__.__name__}.{trait_name}"
         # Can't raise TraitError because the parent will swallow the message
         # and throw it away in a new, less informative TraitError
         if trait is None:
-            raise TypeError("No such trait: %s" % trait_repr)
+            raise TypeError(f"No such trait: {trait_repr}")
         elif not trait.metadata.get('sync'):
-            raise TypeError("%s cannot be synced" % trait_repr)
+            raise TypeError(f"{trait_repr} cannot be synced")
         return value
 
 

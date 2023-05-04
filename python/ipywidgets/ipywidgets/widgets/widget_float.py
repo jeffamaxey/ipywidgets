@@ -302,8 +302,7 @@ class _BoundedFloatRange(_FloatRange):
                 kwargs['value'] = tuple(kwargs['value'])
             except:
                 raise TypeError(
-                    "A 'range' must be able to be cast to a tuple. The input of type"
-                    " {} could not be cast to a tuple".format(type(kwargs['value']))
+                    f"A 'range' must be able to be cast to a tuple. The input of type {type(kwargs['value'])} could not be cast to a tuple"
                 )
         super().__init__(*args, **kwargs)
 
@@ -315,10 +314,10 @@ class _BoundedFloatRange(_FloatRange):
             raise TraitError('setting min > max')
         if trait.name == 'max' and new < self.min:
             raise TraitError('setting max < min')
-        if trait.name == 'min':
-            self.value = (max(new, self.value[0]), max(new, self.value[1]))
         if trait.name == 'max':
             self.value = (min(new, self.value[0]), min(new, self.value[1]))
+        elif trait.name == 'min':
+            self.value = (max(new, self.value[0]), max(new, self.value[1]))
         return new
 
     @validate('value')

@@ -54,12 +54,11 @@ def check_widget(w, **d):
 
 def check_widgets(container, **to_check):
     """Check that widgets are created as expected"""
-    # build a widget dictionary, so it matches
-    widgets = {}
-    for w in container.children:
-        if not isinstance(w, Output):
-            widgets[w.description] = w
-
+    widgets = {
+        w.description: w
+        for w in container.children
+        if not isinstance(w, Output)
+    }
     for key, d in to_check.items():
         assert key in widgets
         check_widget(widgets[key], **d)

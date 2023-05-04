@@ -58,12 +58,9 @@ class Tab(_SelectionContainer):
         if len(change.new) == 0:
             self.selected_index = None
 
-        # if there are tabs, but none is selected, select the first one
-        elif self.selected_index == None:
+        elif self.selected_index is None:
             self.selected_index = 0
 
-        # if there are tabs and a selection, but the selection is no longer
-        # valid, select the last tab.
         elif len(change.new) < self.selected_index:
             self.selected_index = len(change.new) - 1
 

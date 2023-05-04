@@ -124,7 +124,7 @@ def jsdefault(trait):
                 default = trait.make_dynamic_default()
             else:
                 default = trait.default_value
-        if isinstance(default, bytes) or isinstance(default, memoryview):
+        if isinstance(default, (bytes, memoryview)):
             default = trait.default_value_repr()
     return default
 
@@ -139,7 +139,7 @@ def mddefault(attribute):
     elif not is_ref and attribute['type'] != 'bytes':
         default = "{!r}".format(default)
     if not is_ref:
-        default = '`{}`'.format(default)
+        default = f'`{default}`'
     return default
 
 
@@ -152,34 +152,34 @@ def mdtype(attribute):
     if md_type in NUMBER_MAP:
         md_type = NUMBER_MAP[md_type]
     if attribute.get('allow_none'):
-        md_type = '`null` or {}'.format(md_type)
+        md_type = f'`null` or {md_type}'
     if 'enum' in attribute:
         md_type = '{} (one of {})'.format(
             md_type, ', '.join('`{!r}`'.format(n) for n in attribute['enum'])
         )
     if 'items' in attribute:
-        md_type = '{} of {}'.format(md_type, mdtype(attribute['items']))
+        md_type = f"{md_type} of {mdtype(attribute['items'])}"
     if 'widget' in attribute:
-        md_type = '{} to {} widget'.format(md_type, attribute['widget'])
+        md_type = f"{md_type} to {attribute['widget']} widget"
     return md_type
 
 
 def format_widget(widget):
-    out = []
     fmt = '%(name)s (%(module)s, %(version)s)'
-    out.append('### %s; %s' % (fmt % widget['model'], fmt % widget['view']))
-    out.append('')
-    out.append('{name: <16} | {typing: <16} | {default: <16} | {help}'.format(
-        name='Attribute', typing='Type', default='Default', help='Help')
-    )
-    out.append('{0:-<16}-|-{0:-<16}-|-{0:-<16}-|----'.format('-'))
-
+    out = [
+        f"### {fmt % widget['model']}; {fmt % widget['view']}",
+        '',
+        '{name: <16} | {typing: <16} | {default: <16} | {help}'.format(
+            name='Attribute', typing='Type', default='Default', help='Help'
+        ),
+        '{0:-<16}-|-{0:-<16}-|-{0:-<16}-|----'.format('-'),
+    ]
     for attribute in sorted(widget['attributes'], key=itemgetter('name')):
         s = '{name: <16} | {type: <16} | {default: <16} | {help}'.format(
-            name='`{}`'.format(attribute['name']),
+            name=f"`{attribute['name']}`",
             default=mddefault(attribute),
             type=mdtype(attribute),
-            help=attribute['help']
+            help=attribute['help'],
         )
         out.append(s)
     out.append('')
@@ -200,7 +200,7 @@ def jsonify(identifier, widget, widget_list):
             help=trait.help or '',
             default=jsdefault(trait)
         )
-        attribute.update(trait_type(trait, widget_list))
+        attribute |= trait_type(trait, widget_list)
         attributes.append(attribute)
 
     return dict(model=model, view=view, attributes=attributes)
@@ -224,8 +224,7 @@ def create_spec(widget_list):
 
 def create_markdown(spec):
     output = [HEADER]
-    for widget in spec:
-        output.append(format_widget(widget))
+    output.extend(format_widget(widget) for widget in spec)
     return '\n'.join(output)
 
 

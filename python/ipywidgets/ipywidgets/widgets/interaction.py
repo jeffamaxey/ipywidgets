@@ -44,8 +44,10 @@ def show_inline_matplotlib_plots():
     except ImportError:
         return
 
-    if (mpl.get_backend() == 'module://ipykernel.pylab.backend_inline' or
-        mpl.get_backend() == 'module://matplotlib_inline.backend_inline'):
+    if mpl.get_backend() in [
+        'module://ipykernel.pylab.backend_inline',
+        'module://matplotlib_inline.backend_inline',
+    ]:
         flush_figures()
 
 
@@ -74,7 +76,7 @@ def interactive_output(f, controls):
 
 def _matches(o, pattern):
     """Match a pattern of types in a sequence."""
-    if not len(o) == len(pattern):
+    if len(o) != len(pattern):
         return False
     comps = zip(o,pattern)
     return all(isinstance(obj,kind) for obj,kind in comps)
@@ -85,7 +87,7 @@ def _get_min_max_value(min, max, value=None, step=None):
     # Either min and max need to be given, or value needs to be given
     if value is None:
         if min is None or max is None:
-            raise ValueError('unable to infer range, value from: ({}, {}, {})'.format(min, max, value))
+            raise ValueError(f'unable to infer range, value from: ({min}, {max}, {value})')
         diff = max - min
         value = min + (diff / 2)
         # Ensure that value has the same type as diff
@@ -111,7 +113,9 @@ def _get_min_max_value(min, max, value=None, step=None):
         tick = int((value - min) / step)
         value = min + tick * step
     if not min <= value <= max:
-        raise ValueError('value must be between min and max (min={}, value={}, max={})'.format(min, value, max))
+        raise ValueError(
+            f'value must be between min and max (min={min}, value={value}, max={max})'
+        )
     return min, max, value
 
 def _yield_abbreviations_for_parameter(param, kwargs):
@@ -291,7 +295,7 @@ class interactive(VBox):
     @classmethod
     def widget_from_abbrev(cls, abbrev, default=empty):
         """Build a ValueWidget instance given an abbreviation or Widget."""
-        if isinstance(abbrev, ValueWidget) or isinstance(abbrev, fixed):
+        if isinstance(abbrev, (ValueWidget, fixed)):
             return abbrev
 
         if isinstance(abbrev, tuple):
@@ -345,20 +349,14 @@ class interactive(VBox):
         """Make widgets from a tuple abbreviation."""
         if _matches(o, (Real, Real)):
             min, max, value = _get_min_max_value(o[0], o[1])
-            if all(isinstance(_, Integral) for _ in o):
-                cls = IntSlider
-            else:
-                cls = FloatSlider
+            cls = IntSlider if all(isinstance(_, Integral) for _ in o) else FloatSlider
             return cls(value=value, min=min, max=max)
         elif _matches(o, (Real, Real, Real)):
             step = o[2]
             if step <= 0:
                 raise ValueError("step must be >= 0, not %r" % step)
             min, max, value = _get_min_max_value(o[0], o[1], step=step)
-            if all(isinstance(_, Integral) for _ in o):
-                cls = IntSlider
-            else:
-                cls = FloatSlider
+            cls = IntSlider if all(isinstance(_, Integral) for _ in o) else FloatSlider
             return cls(value=value, min=min, max=max, step=step)
 
     @staticmethod
@@ -487,8 +485,7 @@ class _InteractFactory:
         # If kwargs are given, replace self by a new
         # _InteractFactory with the updated kwargs
         if kwargs:
-            kw = dict(self.kwargs)
-            kw.update(kwargs)
+            kw = dict(self.kwargs) | kwargs
             self = type(self)(self.cls, self.opts, kw)
 
         f = __interact_f

@@ -54,7 +54,9 @@ class DatetimePicker(DescriptionWidget, ValueWidget, CoreWidget):
 
     def _validate_tz(self, value):
         if value.tzinfo is None:
-            raise TraitError('%s values needs to be timezone aware' % (self.__class__.__name__,))
+            raise TraitError(
+                f'{self.__class__.__name__} values needs to be timezone aware'
+            )
         return value
 
     @validate("value")
@@ -131,5 +133,7 @@ class NaiveDatetimePicker(DatetimePicker):
 
     def _validate_tz(self, value):
         if value.tzinfo is not None:
-            raise TraitError('%s values needs to be timezone unaware' % (self.__class__.__name__,))
+            raise TraitError(
+                f'{self.__class__.__name__} values needs to be timezone unaware'
+            )
         return value

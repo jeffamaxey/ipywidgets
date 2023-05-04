@@ -6,6 +6,7 @@
 Represents an enumeration using a widget.
 """
 
+
 from collections.abc import Iterable, Mapping
 from itertools import chain
 
@@ -20,8 +21,8 @@ from .docutils import doc_subst
 from traitlets import (Unicode, Bool, Int, Any, Dict, TraitError, CaselessStrEnum,
                        Tuple, Union, observe, validate)
 
-_doc_snippets = {}
-_doc_snippets['selection_params'] = """
+_doc_snippets = {
+    'selection_params': """
     options: list
         The options for the dropdown. This can either be a list of values, e.g.
         ``['Galileo', 'Brahe', 'Hubble']`` or ``[0, 1, 2]``, or a list of
@@ -48,9 +49,8 @@ _doc_snippets['selection_params'] = """
     description: str
         Label for this input group. This should be a string
         describing the widget.
-"""
-
-_doc_snippets['multiple_selection_params'] = """
+""",
+    'multiple_selection_params': """
     options: dict or list
         The options for the dropdown. This can either be a list of values, e.g.
         ``['Galileo', 'Brahe', 'Hubble']`` or ``[0, 1, 2]``, or a list of
@@ -79,9 +79,8 @@ _doc_snippets['multiple_selection_params'] = """
     description: str
         Label for this input group. This should be a string
         describing the widget.
-"""
-
-_doc_snippets['slider_params'] = """
+""",
+    'slider_params': """
     orientation: str
         Either ``'horizontal'`` or ``'vertical'``. Defaults to ``horizontal``.
 
@@ -92,7 +91,8 @@ _doc_snippets['slider_params'] = """
         If ``True``, update the value of the widget continuously as the user
         holds the slider. Otherwise, the model is only updated after the
         user has released the slider. Defaults to ``True``.
-"""
+""",
+}
 
 
 def _exhaust_iterable(x):
@@ -624,7 +624,7 @@ class SelectionRangeSlider(_MultipleSelectionNonempty):
         if all(0 <= i < len(self._options_labels) for i in proposal.value):
             return proposal.value
         else:
-            raise TraitError('Invalid selection: index out of bounds: %s'%(proposal.value,))
+            raise TraitError(f'Invalid selection: index out of bounds: {proposal.value}')
 
     orientation = CaselessStrEnum(
         values=['horizontal', 'vertical'], default_value='horizontal',

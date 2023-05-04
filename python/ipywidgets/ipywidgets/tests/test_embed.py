@@ -137,18 +137,28 @@ class TestEmbed:
 
     def test_snippet(self):
 
+
+
+
         class Parser(HTMLParser):
             state = 'initial'
             states = []
 
             def handle_starttag(self, tag, attrs):
-                attrs = dict(attrs)
-                if tag == 'script' and attrs.get('type', '') == "application/vnd.jupyter.widget-state+json":
-                    self.state = 'widget-state'
-                    self.states.append(self.state)
-                elif tag == 'script' and attrs.get('type', '') == "application/vnd.jupyter.widget-view+json":
-                    self.state = 'widget-view'
-                    self.states.append(self.state)
+                if tag == 'script':
+                    attrs = dict(attrs)
+                    if (
+                        attrs.get('type', '')
+                        == "application/vnd.jupyter.widget-state+json"
+                    ):
+                        self.state = 'widget-state'
+                        self.states.append(self.state)
+                    elif (
+                        attrs.get('type', '')
+                        == "application/vnd.jupyter.widget-view+json"
+                    ):
+                        self.state = 'widget-view'
+                        self.states.append(self.state)
 
             def handle_endtag(self, tag):
                 self.state = 'initial'
@@ -162,6 +172,7 @@ class TestEmbed:
                     view = json.loads(data)
                     assert isinstance(view, dict)
                     self.states.append('check-widget-view')
+
 
         w = IntText(4)
         state = dependency_state(w, drop_defaults=True)

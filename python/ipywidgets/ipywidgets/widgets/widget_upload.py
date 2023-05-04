@@ -36,9 +36,10 @@ def _deserialize_value(js, _):
 
 
 def _serialize_single_file(uploaded_file):
-    js = {}
-    for attribute in ['name', 'type', 'size', 'content']:
-        js[attribute] = uploaded_file[attribute]
+    js = {
+        attribute: uploaded_file[attribute]
+        for attribute in ['name', 'type', 'size', 'content']
+    }
     js['last_modified'] = int(uploaded_file['last_modified'].timestamp() * 1000)
     return js
 

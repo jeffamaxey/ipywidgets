@@ -29,6 +29,6 @@ class DescriptionWidget(DOMWidget, CoreWidget):
             # Exclude style if it had the default value
             if key == 'style':
                 value = getattr(self, key)
-                if repr(value) == '%s()' % value.__class__.__name__:
+                if repr(value) == f'{value.__class__.__name__}()':
                     continue
             yield key

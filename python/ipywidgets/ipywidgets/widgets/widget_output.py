@@ -130,10 +130,9 @@ class Output(DOMWidget):
         """Called upon exiting output widget context manager."""
         kernel = None
         if etype is not None:
-            ip = get_ipython()
-            if ip:
+            if ip := get_ipython():
                 kernel = ip
-                ip.showtraceback((etype, evalue, tb), tb_offset=0)
+                kernel.showtraceback((etype, evalue, tb), tb_offset=0)
             elif self.comm is not None and self.comm.kernel is not None:
                 kernel = self.comm.kernel
                 kernel.send_response(kernel.iopub_socket,

@@ -20,7 +20,7 @@ from ..trait_types import (
 
 
 def test_time_serialize_none():
-    assert time_to_json(None, None) == None
+    assert time_to_json(None, None) is None
 
 
 def test_time_serialize_value():
@@ -31,7 +31,7 @@ def test_time_serialize_value():
 
 
 def test_time_deserialize_none():
-    assert time_from_json(None, None) == None
+    assert time_from_json(None, None) is None
 
 
 def test_time_deserialize_value():
@@ -40,7 +40,7 @@ def test_time_deserialize_value():
 
 
 def test_datetime_serialize_none():
-    assert datetime_to_json(None, None) == None
+    assert datetime_to_json(None, None) is None
 
 
 def test_datetime_serialize_value():
@@ -72,7 +72,7 @@ def test_datetime_serialize_non_utz():
 
 
 def test_datetime_deserialize_none():
-    assert datetime_from_json(None, None) == None
+    assert datetime_from_json(None, None) is None
 
 
 def test_datetime_deserialize_value():

@@ -64,7 +64,7 @@ class DOMWidget(Widget):
             # Exclude layout if it had the default value
             if key == 'layout':
                 value = getattr(self, key)
-                if repr(value) == '%s()' % value.__class__.__name__:
+                if repr(value) == f'{value.__class__.__name__}()':
                     continue
             yield key
         # We also need to include _dom_classes in repr for reproducibility
